@@ -7,33 +7,12 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-<div id="loginScreen">
-  <div class="login-box">
-    <div class="login-logo">EG</div>
-    <h2>Empowerment Groups Registry</h2>
-    <p>Sign in to access the registration system</p>
-    <div id="loginError" class="login-error">Invalid username or password.</div>
-    <form onsubmit="login(event)">
-      <div class="login-field">
-        <label for="loginUsername">Username</label>
-        <input id="loginUsername" autocomplete="username" required>
-      </div>
-      <div class="login-field">
-        <label for="loginPassword">Password</label>
-        <input id="loginPassword" type="password" autocomplete="current-password" required>
-      </div>
-      <button class="login-btn" type="submit">Sign In</button>
-    </form>
-  </div>
-</div>
-
 <header>
   <div class="brand">
     <div class="logo">EG</div>
     <div><h1>Empowerment Groups Registry</h1><p>Club & group registration system</p></div>
   </div>
-  <div style="display:flex;align-items:center;gap:10px"><button class="logout-btn" onclick="logout()">Logout</button><button class="menu-btn" onclick="toggleNav()">☰</button></div>
+  <button class="menu-btn" onclick="toggleNav()">☰</button>
 </header>
 
 <nav id="nav">
@@ -57,14 +36,14 @@
 
 <section id="groups" class="page">
   <div class="page-title"><div><h2>Groups</h2><p>Register and manage empowerment groups.</p></div><button class="primary" onclick="openGroupForm()">+ Register Group</button></div>
-  <input class="search" id="groupSearch" placeholder="Search group name, area or contact..." oninput="renderGroups()">
-  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Group Name</th><th>Category</th><th>Area/Ward</th><th>Contact</th><th>Members</th><th>Actions</th></tr></thead><tbody id="groupTable"></tbody></table></div></div>
+  <input class="search" id="groupSearch" placeholder="Search group number, name, area or contact..." oninput="renderGroups()">
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Group No.</th><th>Group Name</th><th>Category</th><th>Area/Ward</th><th>Contact</th><th>Members</th><th>Actions</th></tr></thead><tbody id="groupTable"></tbody></table></div></div>
 </section>
 
 <section id="members" class="page">
   <div class="page-title"><div><h2>Members</h2><p>Register members under existing groups.</p></div><button class="primary" onclick="openMemberForm()">+ Add Member</button></div>
   <input class="search" id="memberSearch" placeholder="Search member, NRC or group..." oninput="renderMembers()">
-  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Name / NRC</th><th>Group</th><th>Gender</th><th>Age</th><th>Phone</th><th>Position</th><th>Actions</th></tr></thead><tbody id="memberTable"></tbody></table></div></div>
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Group</th><th>Gender</th><th>Age</th><th>Phone</th><th>Position</th><th>Actions</th></tr></thead><tbody id="memberTable"></tbody></table></div></div>
 </section>
 
 <section id="reports" class="page">
