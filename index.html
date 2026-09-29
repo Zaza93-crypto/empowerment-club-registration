@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Empowerment Groups Registry</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">EG</div>
+    <div><h1>Empowerment Groups Registry</h1><p>Club & group registration system</p></div>
+  </div>
+  <button class="menu-btn" onclick="toggleNav()">☰</button>
+</header>
+
+<nav id="nav">
+  <button class="active" onclick="showPage('dashboard',this)">Dashboard</button>
+  <button onclick="showPage('groups',this)">Groups</button>
+  <button onclick="showPage('members',this)">Members</button>
+  <button onclick="showPage('reports',this)">Reports</button>
+</nav>
+
+<main>
+<section id="dashboard" class="page active">
+  <div class="page-title"><div><h2>Dashboard</h2><p>Overview of registered empowerment groups.</p></div><button class="primary" onclick="openGroupForm()">+ Register Group</button></div>
+  <div class="cards">
+    <div class="card"><span>Total Groups</span><strong id="totalGroups">0</strong></div>
+    <div class="card"><span>Total Members</span><strong id="totalMembers">0</strong></div>
+    <div class="card"><span>Male Members</span><strong id="maleMembers">0</strong></div>
+    <div class="card"><span>Female Members</span><strong id="femaleMembers">0</strong></div>
+  </div>
+  <div class="panel"><h3>Recent Groups</h3><div id="recentGroups"></div></div>
+</section>
+
+<section id="groups" class="page">
+  <div class="page-title"><div><h2>Groups</h2><p>Register and manage empowerment groups.</p></div><button class="primary" onclick="openGroupForm()">+ Register Group</button></div>
+  <input class="search" id="groupSearch" placeholder="Search group name, area or contact..." oninput="renderGroups()">
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Group Name</th><th>Category</th><th>Area/Ward</th><th>Contact</th><th>Members</th><th>Actions</th></tr></thead><tbody id="groupTable"></tbody></table></div></div>
+</section>
+
+<section id="members" class="page">
+  <div class="page-title"><div><h2>Members</h2><p>Register members under existing groups.</p></div><button class="primary" onclick="openMemberForm()">+ Add Member</button></div>
+  <input class="search" id="memberSearch" placeholder="Search member, NRC or group..." oninput="renderMembers()">
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Group</th><th>Gender</th><th>Age</th><th>Phone</th><th>Position</th><th>Actions</th></tr></thead><tbody id="memberTable"></tbody></table></div></div>
+</section>
+
+<section id="reports" class="page">
+  <div class="page-title"><div><h2>Reports & Data</h2><p>Export your registry for reporting and analysis.</p></div></div>
+  <div class="report-actions">
+    <button class="primary" onclick="exportCSV('groups')">Export Groups CSV</button>
+    <button class="primary" onclick="exportCSV('members')">Export Members CSV</button>
+    <button class="secondary" onclick="backupData()">Backup All Data</button>
+    <label class="secondary file-label">Restore Backup<input type="file" accept=".json" onchange="restoreData(event)"></label>
+  </div>
+  <div class="panel"><h3>Registry Summary</h3><div id="reportSummary"></div></div>
+</section>
+</main>
+
+<div id="modal" class="modal"><div class="modal-box"><button class="close" onclick="closeModal()">×</button><div id="modalContent"></div></div></div>
+<div id="toast"></div>
+<script src="script.js"></script>
+</body>
+</html>
