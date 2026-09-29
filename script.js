@@ -1,3 +1,38 @@
+
+const AUTH_KEY='empowermentRegistryLoggedIn';
+const LOGIN_USERNAME='admin';
+const LOGIN_PASSWORD='Admin@123';
+
+function login(e){
+  e.preventDefault();
+  const u=document.getElementById('loginUsername').value.trim();
+  const p=document.getElementById('loginPassword').value;
+  const err=document.getElementById('loginError');
+  if(u===LOGIN_USERNAME && p===LOGIN_PASSWORD){
+    localStorage.setItem(AUTH_KEY,'true');
+    document.getElementById('loginScreen').classList.add('hidden');
+    err.classList.remove('show');
+    toast('Login successful');
+  }else{
+    err.classList.add('show');
+    document.getElementById('loginPassword').value='';
+    document.getElementById('loginPassword').focus();
+  }
+}
+function logout(){
+  if(confirm('Log out of the registry?')){
+    localStorage.removeItem(AUTH_KEY);
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('loginUsername').value='';
+    document.getElementById('loginPassword').value='';
+    document.getElementById('loginUsername').focus();
+  }
+}
+function checkLogin(){
+  const loggedIn=localStorage.getItem(AUTH_KEY)==='true';
+  document.getElementById('loginScreen').classList.toggle('hidden',loggedIn);
+}
+
 const KEY='empowermentRegistryV1';
 let data=JSON.parse(localStorage.getItem(KEY)||'null')||{groups:[],members:[]};
 const save=()=>{localStorage.setItem(KEY,JSON.stringify(data));updateDashboard();renderGroups();renderMembers();renderReports()};
@@ -45,4 +80,4 @@ function download(content,name,type='text/csv'){let a=document.createElement('a'
 function exportCSV(type){let rows=type==='groups'?data.groups.map(g=>({Group:g.name,Category:g.category,Area:g.area,Date:g.date,Contact:g.contact,Phone:g.phone,EmpowermentType:g.empowermentType,Amount:g.amount,Activity:g.activity})) : data.members.map(m=>({Name:m.name,NRC:m.nrc,Group:data.groups.find(g=>g.id===m.groupId)?.name||'',Gender:m.gender,Age:m.age,Phone:m.phone,Position:m.position}));let keys=Object.keys(rows[0]||{Data:''});let csv=[keys.join(','),...rows.map(r=>keys.map(k=>csvEscape(r[k])).join(','))].join('\n');download(csv,`${type}-registry.csv`);toast('CSV exported')}
 function backupData(){download(JSON.stringify(data,null,2),'empowerment-registry-backup.json','application/json');toast('Backup created')}
 function restoreData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.groups||!x.members)throw 0;data=x;save();toast('Backup restored')}catch{alert('Invalid backup file')}};r.readAsText(f)}
-updateDashboard();renderReports();
+checkLogin();updateDashboard();renderReports();

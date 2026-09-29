@@ -4,3 +4,20 @@
 .duplicate-note{margin-top:4px;color:#b42318;font-size:12px;font-weight:600}
 .nrc-warning{display:none;color:#b42318;font-size:12px;line-height:1.4}
 .nrc-warning.show{display:block;padding:8px 10px;background:#fff1f1;border:1px solid #f4b4b0;border-radius:7px}
+
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#173b6c,#0e294d);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+#loginScreen.hidden{display:none}
+.login-box{width:min(420px,100%);background:#fff;border-radius:18px;padding:30px;box-shadow:0 15px 50px #0005}
+.login-logo{width:58px;height:58px;border-radius:15px;background:#f4b400;display:grid;place-items:center;font-weight:800;font-size:20px;color:#173b6c;margin:0 auto 14px}
+.login-box h2{text-align:center;margin:0 0 6px;color:#173b6c}
+.login-box p{text-align:center;color:#6b7280;margin:0 0 22px;font-size:14px}
+.login-field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.login-field label{font-size:13px;font-weight:700;color:#374151}
+.login-field input{padding:12px;border:1px solid #ccd3df;border-radius:9px;font-size:15px}
+.login-field input:focus{outline:2px solid #f4b400;border-color:#173b6c}
+.login-btn{width:100%;border:0;border-radius:9px;padding:13px;background:#173b6c;color:#fff;font-weight:700;cursor:pointer;font-size:15px}
+.login-error{display:none;color:#b42318;background:#fff1f1;border:1px solid #f4b4b0;border-radius:8px;padding:9px 10px;margin-bottom:14px;font-size:13px}
+.login-error.show{display:block}
+.logout-btn{border:0;background:#eef2f7;color:#173b6c;border-radius:8px;padding:9px 12px;cursor:pointer;font-weight:bold}
+.app-hidden{display:none!important}
+@media(max-width:700px){.login-box{padding:24px}}

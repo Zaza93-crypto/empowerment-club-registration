@@ -7,12 +7,33 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">EG</div>
+    <h2>Empowerment Groups Registry</h2>
+    <p>Sign in to access the registration system</p>
+    <div id="loginError" class="login-error">Invalid username or password.</div>
+    <form onsubmit="login(event)">
+      <div class="login-field">
+        <label for="loginUsername">Username</label>
+        <input id="loginUsername" autocomplete="username" required>
+      </div>
+      <div class="login-field">
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="login-btn" type="submit">Sign In</button>
+    </form>
+  </div>
+</div>
+
 <header>
   <div class="brand">
     <div class="logo">EG</div>
     <div><h1>Empowerment Groups Registry</h1><p>Club & group registration system</p></div>
   </div>
-  <button class="menu-btn" onclick="toggleNav()">☰</button>
+  <div style="display:flex;align-items:center;gap:10px"><button class="logout-btn" onclick="logout()">Logout</button><button class="menu-btn" onclick="toggleNav()">☰</button></div>
 </header>
 
 <nav id="nav">
