@@ -36,21 +36,21 @@
 
 <section id="groups" class="page">
   <div class="page-title"><div><h2>Groups</h2><p>Register and manage empowerment groups.</p></div><button class="primary" onclick="openGroupForm()">+ Register Group</button></div>
-  <input class="search" id="groupSearch" placeholder="Search group number, name, area or contact..." oninput="renderGroups()">
-  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Group No.</th><th>Group Name</th><th>Category</th><th>Area/Ward</th><th>Contact</th><th>Members</th><th>Actions</th></tr></thead><tbody id="groupTable"></tbody></table></div></div>
+  <input class="search" id="groupSearch" placeholder="Search group name, area or contact..." oninput="renderGroups()">
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Group Name</th><th>Category</th><th>Area/Ward</th><th>Contact</th><th>Members</th><th>Actions</th></tr></thead><tbody id="groupTable"></tbody></table></div></div>
 </section>
 
 <section id="members" class="page">
-  <div class="page-title"><div><h2>Members</h2><p>Register members under existing groups.</p></div><button class="primary" onclick="openMemberForm()">+ Add Member</button></div>
-  <input class="search" id="memberSearch" placeholder="Search member, NRC or group..." oninput="renderMembers()">
-  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Group</th><th>Gender</th><th>Age</th><th>Phone</th><th>Position</th><th>Actions</th></tr></thead><tbody id="memberTable"></tbody></table></div></div>
+  <div class="page-title"><div><h2>Members</h2><p>Register members under existing groups.</p></div><div class="member-actions"><button class="secondary" onclick="openBulkMemberForm()">Bulk Entry</button><label class="secondary file-label">Import CSV<input type="file" accept=".csv,text/csv" onchange="importMembersCSV(event)"></label><button class="primary" onclick="openMemberForm()">+ Add Member</button></div></div>
+  <input class="search" id="memberSearch" placeholder="Search identity number, member, NRC or group..." oninput="renderMembers()">
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Identity No.</th><th>Name</th><th>Group</th><th>Gender</th><th>Age</th><th>Phone</th><th>Position</th><th>Actions</th></tr></thead><tbody id="memberTable"></tbody></table></div></div>
 </section>
 
 <section id="reports" class="page">
   <div class="page-title"><div><h2>Reports & Data</h2><p>Export your registry for reporting and analysis.</p></div></div>
   <div class="report-actions">
     <button class="primary" onclick="exportCSV('groups')">Export Groups CSV</button>
-    <button class="primary" onclick="exportCSV('members')">Export Members CSV</button>
+    <button class="primary" onclick="exportCSV('members')">Export Members CSV</button><button class="secondary" onclick="downloadMemberTemplate()">Member Import Template</button>
     <button class="secondary" onclick="backupData()">Backup All Data</button>
     <label class="secondary file-label">Restore Backup<input type="file" accept=".json" onchange="restoreData(event)"></label>
   </div>
