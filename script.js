@@ -39,115 +39,93 @@ function updateDashboard(){totalGroups.textContent=data.groups.length;totalMembe
 function renderReports(){let amount=data.groups.reduce((a,g)=>a+Number(g.amount||0),0);reportSummary.innerHTML=`<p><b>Total groups:</b> ${data.groups.length}</p><p><b>Total members:</b> ${data.members.length}</p><p><b>Male:</b> ${data.members.filter(x=>x.gender==='Male').length} &nbsp; <b>Female:</b> ${data.members.filter(x=>x.gender==='Female').length}</p><p><b>Total empowerment recorded:</b> K${amount.toLocaleString()}</p>`}
 function deleteGroup(id){if(!confirm('Delete this group and its members?'))return;data.groups=data.groups.filter(x=>x.id!==id);data.members=data.members.filter(x=>x.groupId!==id);save();toast('Group deleted')}
 function deleteMember(id){if(!confirm('Delete this member?'))return;data.members=data.members.filter(x=>x.id!==id);save();toast('Member deleted')}
+
+let bulkPendingRows=[];
+function normalizeHeader(v){return String(v??'').trim().toLowerCase().replace(/[\s_\-\/]+/g,'').replace(/[^a-z0-9]/g,'')}
+function getCell(row,names){const wanted=names.map(normalizeHeader);const key=Object.keys(row).find(k=>wanted.includes(normalizeHeader(k)));return key===undefined?'':row[key]}
+function openBulkImport(){
+  if(!data.groups.length){toast('Register at least one group first');return}
+  openModal(`<h2>Bulk Import Group Members</h2>
+  <p class="hint">Prepare an Excel file using the template. Each row is one member. The <b>Group Name</b> must match a registered group.</p>
+  <div class="bulk-help"><b>Required:</b> Identity Number, Full Name, Group Name, Gender<br><b>Optional:</b> NRC/ID Number, Age, Phone, Position</div>
+  <div class="bulk-actions"><button class="secondary" type="button" onclick="downloadMemberTemplate()">Download Excel Template</button><label class="primary file-label">Choose Excel File<input id="bulkFile" type="file" accept=".xlsx,.xls,.csv" onchange="previewBulkImport(event)"></label></div>
+  <div id="bulkPreview"></div>`)
+}
+function downloadMemberTemplate(){
+  if(typeof XLSX==='undefined'){toast('Excel library is not available');return}
+  const rows=[
+    {'Identity Number':'GRP-001-001','Full Name':'Example Member','Group Name':data.groups[0]?.name||'Existing Group','NRC/ID Number':'123456/78/1','Gender':'Female','Age':30,'Phone':'0970000000','Position':'Member'},
+    {'Identity Number':'GRP-001-002','Full Name':'Second Member','Group Name':data.groups[0]?.name||'Existing Group','NRC/ID Number':'','Gender':'Male','Age':35,'Phone':'','Position':'Member'}
+  ];
+  const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Members');
+  XLSX.writeFile(wb,'empowerment-member-import-template.xlsx');toast('Template downloaded')
+}
+function findGroupByName(name){const q=String(name??'').trim().toLowerCase();return data.groups.find(g=>String(g.name??'').trim().toLowerCase()===q)}
+function existingIdentity(identity,ignoreIds=[]){const q=String(identity??'').trim().toLowerCase();return data.members.find(m=>String(m.identityNumber??'').trim().toLowerCase()===q&&!ignoreIds.includes(m.id))}
+function existingNRC(nrc){const q=String(nrc??'').trim().toLowerCase();if(!q)return null;return data.members.find(m=>String(m.nrc??'').trim().toLowerCase()===q)}
+function normalizeGender(v){const q=String(v??'').trim().toLowerCase();if(q==='m'||q==='male')return 'Male';if(q==='f'||q==='female')return 'Female';return ''}
+function normalizePosition(v){const q=String(v??'').trim();return q||'Member'}
+function previewBulkImport(event){
+  const file=event.target.files?.[0];if(!file)return;
+  const box=document.getElementById('bulkPreview');box.innerHTML='<div class="bulk-loading">Reading Excel file...</div>';
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      if(typeof XLSX==='undefined')throw new Error('Excel library is not available. Check your internet connection.');
+      const wb=XLSX.read(e.target.result,{type:'array'});const sheet=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:false});
+      if(!rows.length){box.innerHTML='<div class="import-error">No data rows were found in the first worksheet.</div>';return}
+      const seenIdentity=new Set();const valid=[];const errors=[];const warnings=[];
+      rows.forEach((row,i)=>{
+        const excelRow=i+2;
+        const identity=String(getCell(row,['Identity Number','Identity No','IdentityNumber'])).trim();
+        const name=String(getCell(row,['Full Name','Name','Member Name'])).trim();
+        const groupName=String(getCell(row,['Group Name','Group'])).trim();
+        const nrc=String(getCell(row,['NRC/ID Number','NRC','NRC Number','ID Number'])).trim();
+        const gender=normalizeGender(getCell(row,['Gender','Sex']));
+        const age=String(getCell(row,['Age'])).trim();
+        const phone=String(getCell(row,['Phone','Phone Number','Mobile'])).trim();
+        const position=normalizePosition(getCell(row,['Position','Role']));
+        const rowErrors=[];
+        if(!identity)rowErrors.push('Identity Number missing');
+        if(!name)rowErrors.push('Full Name missing');
+        if(!groupName)rowErrors.push('Group Name missing');
+        if(!gender)rowErrors.push('Gender must be Male/Female');
+        const group=findGroupByName(groupName);if(groupName&&!group)rowErrors.push('Group not found');
+        const idKey=identity.toLowerCase();
+        if(identity&&seenIdentity.has(idKey))rowErrors.push('Duplicate Identity Number in this Excel file');
+        if(identity&&existingIdentity(identity))rowErrors.push('Identity Number already registered');
+        if(identity)seenIdentity.add(idKey);
+        if(nrc){const old=existingNRC(nrc);if(old){const oldGroup=data.groups.find(g=>g.id===old.groupId);if(oldGroup&&group&&old.groupId!==group.id)warnings.push({row:excelRow,type:'NRC',message:`NRC ${nrc} is already registered under ${oldGroup.name}`});else rowErrors.push('NRC/ID Number already registered');}}
+        if(age&&(isNaN(Number(age))||Number(age)<1||Number(age)>120))rowErrors.push('Invalid age');
+        const item={excelRow,identityNumber:identity,name,groupId:group?.id||'',groupName,nrc,gender,age,phone,position,errors:rowErrors};
+        if(rowErrors.length)errors.push(item);else valid.push(item);
+      });
+      bulkPendingRows=valid;
+      const warningRows=warnings.map(w=>`<li>Row ${w.row}: ${esc(w.message)}</li>`).join('');
+      const previewRows=[...valid,...errors].slice(0,100).map(x=>`<tr><td>${x.excelRow}</td><td>${esc(x.identityNumber)}</td><td>${esc(x.name)}</td><td>${esc(x.groupName)}</td><td>${esc(x.gender)}</td><td>${x.errors.length?`<span class="status-bad">${esc(x.errors.join('; '))}</span>`:'<span class="status-ok">Ready</span>'}</td></tr>`).join('');
+      box.innerHTML=`<div class="import-summary"><b>${rows.length}</b> rows found · <b>${valid.length}</b> ready to import · <b>${errors.length}</b> with errors${warnings.length?` · <b>${warnings.length}</b> NRC warnings`:''}</div>
+      ${warnings.length?`<div class="import-warning"><b>Cross-group NRC warning:</b><ul>${warningRows}</ul><p>These rows can still be imported. Review them before continuing.</p></div>`:''}
+      <div class="table-wrap"><table class="preview-table"><thead><tr><th>Excel Row</th><th>Identity</th><th>Name</th><th>Group</th><th>Gender</th><th>Status</th></tr></thead><tbody>${previewRows||'<tr><td colspan="6" class="empty">No rows to preview.</td></tr>'}</tbody></table></div>
+      <div class="form-actions"><button class="secondary" type="button" onclick="closeModal()">Cancel</button><button class="primary" type="button" ${valid.length?'':'disabled'} onclick="commitBulkImport(bulkPendingRows)">Import ${valid.length} Valid Member${valid.length===1?'':'s'}</button></div>`;
+    }catch(err){console.error(err);box.innerHTML=`<div class="import-error">Could not read the Excel file: ${esc(err.message||String(err))}</div>`}
+  };
+  reader.readAsArrayBuffer(file)
+}
+function commitBulkImport(rows){
+  if(!Array.isArray(rows)||!rows.length)return;
+  let added=0;const conflicts=[];const batchIds=new Set();
+  rows.forEach(r=>{
+    const identity=String(r.identityNumber||'').trim();const key=identity.toLowerCase();
+    if(batchIds.has(key)||existingIdentity(identity)){conflicts.push(identity);return}
+    const id=Date.now().toString()+'-'+Math.random().toString(36).slice(2,8);batchIds.add(key);
+    data.members.push({id,identityNumber:identity,groupId:r.groupId,name:r.name,nrc:r.nrc,gender:r.gender,age:r.age,phone:r.phone,position:r.position});added++;
+  });
+  save();closeModal();toast(`${added} member${added===1?'':'s'} imported${conflicts.length?`; ${conflicts.length} skipped`:''}`)
+}
+
 function csvEscape(v){return '"'+String(v??'').replaceAll('"','""')+'"'}
 function download(content,name,type='text/csv'){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click()}
 function exportCSV(type){let rows=type==='groups'?data.groups.map(g=>({Group:g.name,Category:g.category,Area:g.area,Date:g.date,Contact:g.contact,Phone:g.phone,EmpowermentType:g.empowermentType,Amount:g.amount,Activity:g.activity})) : data.members.map(m=>({IdentityNumber:m.identityNumber||'',Name:m.name,NRC:m.nrc,Group:data.groups.find(g=>g.id===m.groupId)?.name||'',Gender:m.gender,Age:m.age,Phone:m.phone,Position:m.position}));let keys=Object.keys(rows[0]||{Data:''});let csv=[keys.join(','),...rows.map(r=>keys.map(k=>csvEscape(r[k])).join(','))].join('\n');download(csv,`${type}-registry.csv`);toast('CSV exported')}
 function backupData(){download(JSON.stringify(data,null,2),'empowerment-registry-backup.json','application/json');toast('Backup created')}
 function restoreData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.groups||!x.members)throw 0;data=x;save();toast('Backup restored')}catch{alert('Invalid backup file')}};r.readAsText(f)}
-
-function openBulkMemberForm(){
-  if(!data.groups.length){toast('Register a group first');return}
-  const rows=Array.from({length:5},(_,i)=>bulkMemberRow(i,{})).join('');
-  openModal(`<h2>Bulk Member Entry</h2>
-  <div class="bulk-help"><b>Enter multiple members at once.</b> Each row is one member. Identity Number must be unique. NRC is also checked for duplicates. You can add more rows before saving.</div>
-  <div class="bulk-table-wrap"><table class="bulk-table"><thead><tr>
-  <th>Identity No. *</th><th>Group *</th><th>Full Name *</th><th>NRC/ID</th><th>Gender *</th><th>Age</th><th>Phone</th><th>Position</th><th>Status</th>
-  </tr></thead><tbody id="bulkMemberBody">${rows}</tbody></table></div>
-  <div class="form-actions"><button type="button" class="secondary" onclick="addBulkRows(5)">+ 5 Rows</button><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button class="primary" type="button" onclick="saveBulkMembers()">Save All Members</button></div>`);
-}
-function bulkMemberRow(i,m){
-  const groupOptions=data.groups.map(g=>`<option value="${g.id}" ${m.groupId===g.id?'selected':''}>${esc(g.name)}</option>`).join('');
-  return `<tr data-row="${i}">
-    <td><input class="bi" value="${esc(m.identityNumber||'')}" placeholder="LUN-001"></td>
-    <td><select class="bg"><option value="">Select</option>${groupOptions}</select></td>
-    <td><input class="bn" value="${esc(m.name||'')}"></td>
-    <td><input class="bc" value="${esc(m.nrc||'')}"></td>
-    <td><select class="bgen"><option value="">Select</option><option>Male</option><option>Female</option></select></td>
-    <td><input class="ba" type="number" min="1" max="120" value="${esc(m.age||'')}"></td>
-    <td><input class="bp" value="${esc(m.phone||'')}"></td>
-    <td><select class="bpos"><option>Member</option><option>Chairperson</option><option>Secretary</option><option>Treasurer</option><option>Other</option></select></td>
-    <td class="bulk-status"></td>
-  </tr>`;
-}
-function addBulkRows(n=5){
-  const body=document.getElementById('bulkMemberBody');
-  const start=body.querySelectorAll('tr').length;
-  for(let i=0;i<n;i++) body.insertAdjacentHTML('beforeend',bulkMemberRow(start+i,{}));
-}
-function saveBulkMembers(){
-  const rows=[...document.querySelectorAll('#bulkMemberBody tr')];
-  const newMembers=[], identities=new Set(data.members.map(m=>(m.identityNumber||'').trim().toLowerCase()).filter(Boolean));
-  const nrcs=new Set(data.members.map(m=>(m.nrc||'').trim().toLowerCase()).filter(Boolean));
-  let errors=0, entered=0;
-  rows.forEach(row=>{
-    const identity=row.querySelector('.bi').value.trim(), groupId=row.querySelector('.bg').value,
-      name=row.querySelector('.bn').value.trim(), nrc=row.querySelector('.bc').value.trim(),
-      gender=row.querySelector('.bgen').value, age=row.querySelector('.ba').value,
-      phone=row.querySelector('.bp').value.trim(), position=row.querySelector('.bpos').value,
-      status=row.querySelector('.bulk-status');
-    const blank=[identity,groupId,name,nrc,gender,age,phone].every(x=>!x);
-    if(blank){status.textContent='';return}
-    entered++;
-    let msg='';
-    if(!identity||!groupId||!name||!gender) msg='Missing required field';
-    const ik=identity.toLowerCase(), nk=nrc.toLowerCase();
-    if(!msg && identities.has(ik)) msg='Duplicate Identity No.';
-    if(!msg && nrc && nrcs.has(nk)) msg='Duplicate NRC/ID';
-    if(!msg && newMembers.some(m=>m.identityNumber.toLowerCase()===ik)) msg='Duplicate Identity in batch';
-    if(!msg && nrc && newMembers.some(m=>(m.nrc||'').toLowerCase()===nk)) msg='Duplicate NRC in batch';
-    if(msg){status.textContent=msg;status.className='bulk-status error';errors++;return}
-    const obj={id:Date.now().toString()+Math.random().toString(36).slice(2),identityNumber:identity,groupId,name,nrc,gender,age,phone,position};
-    newMembers.push(obj);identities.add(ik);if(nrc)nrcs.add(nk);
-    status.textContent='Ready';status.className='bulk-status ok';
-  });
-  if(errors){toast(`${errors} row(s) need correction`);return}
-  if(!entered){toast('Enter at least one member');return}
-  data.members.push(...newMembers);save();closeModal();toast(`${newMembers.length} members saved successfully`);
-}
-function parseCSVLine(line){
-  const out=[];let cur='',quote=false;
-  for(let i=0;i<line.length;i++){const ch=line[i];
-    if(ch==='"' && line[i+1]==='"'){cur+='"';i++}
-    else if(ch==='"') quote=!quote;
-    else if(ch===',' && !quote){out.push(cur.trim());cur='';}
-    else cur+=ch;
-  } out.push(cur.trim()); return out;
-}
-function importMembersCSV(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=()=>{
-    try{
-      if(!data.groups.length){toast('Register a group first');e.target.value='';return}
-      const lines=reader.result.replace(/^\uFEFF/,'').split(/\r?\n/).filter(x=>x.trim());
-      if(lines.length<2)throw new Error('CSV has no member rows');
-      const headers=parseCSVLine(lines[0]).map(x=>x.toLowerCase().replace(/[^a-z0-9]/g,''));
-      const idx=(...names)=>names.map(n=>headers.indexOf(n)).find(i=>i>=0);
-      const map={identity:idx('identitynumber','identityno','identity'),name:idx('name','fullname'),nrc:idx('nrc','idnumber','nrcid'),group:idx('group','groupname'),gender:idx('gender'),age:idx('age'),phone:idx('phone','phonenumber'),position:idx('position')};
-      if(map.identity<0||map.name<0||map.group<0||map.gender<0) throw new Error('Required columns: IdentityNumber, Name, Group, Gender');
-      let imported=0, skipped=0, messages=[];
-      const existingIds=new Set(data.members.map(m=>(m.identityNumber||'').toLowerCase()));
-      const existingNrc=new Set(data.members.map(m=>(m.nrc||'').toLowerCase()).filter(Boolean));
-      lines.slice(1).forEach((line,num)=>{
-        const v=parseCSVLine(line);const get=k=>map[k]>=0?(v[map[k]]||'').trim():'';
-        const identity=get('identity'),name=get('name'),groupName=get('group'),gender=get('gender'),nrc=get('nrc');
-        if(!identity&&!name&&!groupName){return}
-        const g=data.groups.find(x=>x.name.toLowerCase()===groupName.toLowerCase()||x.id===groupName);
-        let reason=!identity||!name||!groupName||!gender?'missing required data':!g?'group not found':existingIds.has(identity.toLowerCase())?'duplicate Identity No.':(nrc&&existingNrc.has(nrc.toLowerCase()))?'duplicate NRC/ID':'';
-        if(reason){skipped++;messages.push(`Row ${num+2}: ${reason}`);return}
-        data.members.push({id:Date.now().toString()+Math.random().toString(36).slice(2),identityNumber:identity,groupId:g.id,name,nrc,gender,age:get('age'),phone:get('phone'),position:get('position')||'Member'});
-        existingIds.add(identity.toLowerCase());if(nrc)existingNrc.add(nrc.toLowerCase());imported++;
-      });
-      save();
-      alert(`Import complete.\nImported: ${imported}\nSkipped: ${skipped}${messages.length?'\n\n'+messages.slice(0,15).join('\n'):''}`);
-    }catch(err){alert('Import failed: '+err.message)}
-    e.target.value='';
-  };
-  reader.readAsText(file);
-}
-function downloadMemberTemplate(){
-  const csv='IdentityNumber,Name,NRC,Group,Gender,Age,Phone,Position\nLUN-001,John Banda,123456/10/1,Example Group,Male,30,0970000000,Member\n';
-  download(csv,'member-import-template.csv');
-}
-
 updateDashboard();renderReports();
