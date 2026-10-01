@@ -1,4 +1,4 @@
-const API='/api/data';
+const API='https://empowerment-api.mikotembo129.workers.dev/api/data';
 let data={groups:[],members:[]};
 let bulkPendingRows=[];
 
