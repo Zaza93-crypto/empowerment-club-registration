@@ -49,7 +49,7 @@ function toast(msg){let t=document.getElementById('toast');t.textContent=msg;t.s
 function openGroupForm(id=null){
   let g=data.groups.find(x=>x.id===id)||{};
   openModal(`<h2>${id?'Edit':'Register'} Group</h2><form onsubmit="saveGroup(event,'${id||''}')"><div class="form-grid">
-  <div class="field"><label>Group ID Number *</label><input id="gidnumber" required value="${esc(g.groupNumber)}" placeholder="e.g. GRP-001"><small class="hint">Assign a unique ID number for this group.</small></div>
+  <div class="field"><label>Group Specific Identity Number *</label><input id="gidnumber" required value="${esc(g.groupNumber)}" placeholder="e.g. GRP-001"><small class="hint">Assign a unique identity number specifically to this group. Example: GRP-001.</small></div>
   <div class="field"><label>Group Name *</label><input id="gname" required value="${esc(g.name)}"></div>
   <div class="field"><label>Group Category *</label><select id="gcat" required><option value="">Select</option>${['Women','Youth','Men','Mixed','Cooperative','Other'].map(x=>`<option ${g.category===x?'selected':''}>${x}</option>`).join('')}</select></div>
   <div class="field"><label>Area/Ward *</label><input id="garea" required value="${esc(g.area)}"></div>
