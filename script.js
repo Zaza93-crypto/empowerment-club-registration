@@ -10,31 +10,16 @@ const api=async(body=null)=>{
   if(!r.ok) throw new Error(j.error||`Request failed (${r.status})`);
   return j;
 };
-async function loadData(showError=true){
+async function loadData(){
   try{
     const j=await api();
     data={groups:j.groups||[],members:j.members||[]};
     updateDashboard();renderGroups();renderMembers();renderReports();
   }catch(err){
     console.error(err);
-    if(showError) toast('Database connection failed: '+err.message);
+    toast('Database connection failed: '+err.message);
   }
 }
-
-/* Keep all browsers/devices synchronized with the central database. */
-let syncBusy=false;
-async function syncData(){
-  if(syncBusy || document.hidden) return;
-  syncBusy=true;
-  try{ await loadData(false); }
-  finally{ syncBusy=false; }
-}
-
-setInterval(syncData,10000);
-document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden) syncData();
-});
-window.addEventListener('focus',()=>syncData());
 async function saveRemote(action,payload){
   try{
     await api({action,...payload});
@@ -64,6 +49,7 @@ function toast(msg){let t=document.getElementById('toast');t.textContent=msg;t.s
 function openGroupForm(id=null){
   let g=data.groups.find(x=>x.id===id)||{};
   openModal(`<h2>${id?'Edit':'Register'} Group</h2><form onsubmit="saveGroup(event,'${id||''}')"><div class="form-grid">
+  <div class="field"><label>Group Specific Identity Number *</label><input id="gidnumber" required value="${esc(g.groupNumber)}" placeholder="e.g. GRP-001"><small class="hint">Assign a unique identity number specifically to this group. Example: GRP-001.</small></div>
   <div class="field"><label>Group Name *</label><input id="gname" required value="${esc(g.name)}"></div>
   <div class="field"><label>Group Category *</label><select id="gcat" required><option value="">Select</option>${['Women','Youth','Men','Mixed','Cooperative','Other'].map(x=>`<option ${g.category===x?'selected':''}>${x}</option>`).join('')}</select></div>
   <div class="field"><label>Area/Ward *</label><input id="garea" required value="${esc(g.area)}"></div>
@@ -78,7 +64,7 @@ function openGroupForm(id=null){
 }
 async function saveGroup(e,id){
   e.preventDefault();
-  let obj={id:id||crypto.randomUUID(),name:gname.value.trim(),category:gcat.value,area:garea.value.trim(),date:gdate.value,contact:gcontact.value.trim(),phone:gphone.value.trim(),empowermentType:getype.value.trim(),amount:Number(gamount.value||0),activity:gactivity.value.trim(),note:gnote.value.trim()};
+  let obj={id:id||crypto.randomUUID(),groupNumber:gidnumber.value.trim(),name:gname.value.trim(),category:gcat.value,area:garea.value.trim(),date:gdate.value,contact:gcontact.value.trim(),phone:gphone.value.trim(),empowermentType:getype.value.trim(),amount:Number(gamount.value||0),activity:gactivity.value.trim(),note:gnote.value.trim()};
   if(await saveRemote('saveGroup',{group:obj})){closeModal();toast('Group saved successfully')}
 }
 
@@ -108,8 +94,8 @@ async function saveMember(e,id){
 
 function renderGroups(){
   let q=(document.getElementById('groupSearch')?.value||'').toLowerCase();
-  let rows=data.groups.filter(g=>[g.name,g.area,g.contact,g.category].join(' ').toLowerCase().includes(q));
-  document.getElementById('groupTable').innerHTML=rows.length?rows.map(g=>`<tr><td><b>${esc(g.name)}</b></td><td>${esc(g.category)}</td><td>${esc(g.area)}</td><td>${esc(g.contact)}<br>${esc(g.phone)}</td><td>${data.members.filter(m=>m.groupId===g.id).length}</td><td><button class="action" onclick="openGroupForm('${g.id}')">Edit</button><button class="action danger" onclick="deleteGroup('${g.id}')">Delete</button></td></tr>`).join(''):`<tr><td colspan="6" class="empty">No groups registered.</td></tr>`
+  let rows=data.groups.filter(g=>[g.groupNumber,g.name,g.area,g.contact,g.category].join(' ').toLowerCase().includes(q));
+  document.getElementById('groupTable').innerHTML=rows.length?rows.map(g=>`<tr><td><b>${esc(g.groupNumber||'—')}</b><br>${esc(g.name)}</td><td>${esc(g.category)}</td><td>${esc(g.area)}</td><td>${esc(g.contact)}<br>${esc(g.phone)}</td><td>${data.members.filter(m=>m.groupId===g.id).length}</td><td><button class="action" onclick="openGroupForm('${g.id}')">Edit</button><button class="action danger" onclick="deleteGroup('${g.id}')">Delete</button></td></tr>`).join(''):`<tr><td colspan="6" class="empty">No groups registered.</td></tr>`
 }
 function renderMembers(){
   let q=(document.getElementById('memberSearch')?.value||'').toLowerCase();
@@ -219,7 +205,7 @@ async function commitBulkImport(rows){
 function csvEscape(v){return '"'+String(v??'').replaceAll('"','""')+'"'}
 function download(content,name,type='text/csv'){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function exportCSV(type){
-  let rows=type==='groups'?data.groups.map(g=>({Group:g.name,Category:g.category,Area:g.area,Date:g.date,Contact:g.contact,Phone:g.phone,EmpowermentType:g.empowermentType,Amount:g.amount,Activity:g.activity})) : data.members.map(m=>({IdentityNumber:m.identityNumber||'',Name:m.name,NRC:m.nrc,Group:data.groups.find(g=>g.id===m.groupId)?.name||'',Gender:m.gender,Age:m.age,Phone:m.phone,Position:m.position}));
+  let rows=type==='groups'?data.groups.map(g=>({GroupID:g.groupNumber||'',Group:g.name,Category:g.category,Area:g.area,Date:g.date,Contact:g.contact,Phone:g.phone,EmpowermentType:g.empowermentType,Amount:g.amount,Activity:g.activity})) : data.members.map(m=>({IdentityNumber:m.identityNumber||'',Name:m.name,NRC:m.nrc,Group:data.groups.find(g=>g.id===m.groupId)?.name||'',Gender:m.gender,Age:m.age,Phone:m.phone,Position:m.position}));
   let keys=Object.keys(rows[0]||{Data:''});let csv=[keys.join(','),...rows.map(r=>keys.map(k=>csvEscape(r[k])).join(','))].join('\n');download(csv,`${type}-registry.csv`);toast('CSV exported')
 }
 async function backupData(){download(JSON.stringify(data,null,2),'empowerment-registry-backup.json','application/json');toast('Backup created')}
