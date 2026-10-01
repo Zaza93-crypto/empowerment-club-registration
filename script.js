@@ -10,16 +10,31 @@ const api=async(body=null)=>{
   if(!r.ok) throw new Error(j.error||`Request failed (${r.status})`);
   return j;
 };
-async function loadData(){
+async function loadData(showError=true){
   try{
     const j=await api();
     data={groups:j.groups||[],members:j.members||[]};
     updateDashboard();renderGroups();renderMembers();renderReports();
   }catch(err){
     console.error(err);
-    toast('Database connection failed: '+err.message);
+    if(showError) toast('Database connection failed: '+err.message);
   }
 }
+
+/* Keep all browsers/devices synchronized with the central database. */
+let syncBusy=false;
+async function syncData(){
+  if(syncBusy || document.hidden) return;
+  syncBusy=true;
+  try{ await loadData(false); }
+  finally{ syncBusy=false; }
+}
+
+setInterval(syncData,10000);
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden) syncData();
+});
+window.addEventListener('focus',()=>syncData());
 async function saveRemote(action,payload){
   try{
     await api({action,...payload});
