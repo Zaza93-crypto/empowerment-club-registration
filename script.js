@@ -21,19 +21,18 @@ function login(e){
   }
 }
 function logout(){
-  if(confirm('Log out of the registry?')){
-    localStorage.removeItem(AUTH_KEY);
-    localStorage.removeItem('empowermentLoggedIn');
-    document.getElementById('loginScreen').classList.remove('hidden');
-    document.getElementById('loginUsername').value='';
-    document.getElementById('loginPassword').value='';
-    document.getElementById('loginUsername').focus();
-  }
+  sessionStorage.removeItem('empowermentAdminToken');
+  sessionStorage.removeItem('empowermentAdminUser');
+  localStorage.removeItem('empowermentLoggedIn');
+  localStorage.removeItem('isLoggedIn');
+  localStorage.removeItem('empowermentRegistryLoggedIn');
+  window.location.replace('login.html');
 }
 function checkLogin(){
   const loginScreen=document.getElementById('loginScreen');
   if(!loginScreen) return;
-  const loggedIn=localStorage.getItem(AUTH_KEY)==='true';
+  const loggedIn=!!(sessionStorage.getItem('empowermentAdminToken') ||
+                    localStorage.getItem('empowermentAdminToken'));
   loginScreen.classList.toggle('hidden',loggedIn);
 }
 
