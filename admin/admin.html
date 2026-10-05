@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lundazi Town Council | Admin</title>
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<div id="login" class="login-wrap">
+  <div class="login-card">
+    <img src="lundazi-town-council-logo.jpg" class="logo" alt="Lundazi Town Council">
+    <h1>Lundazi Town Council</h1>
+    <p>Empowerment Group Registration Management System</p>
+    <form id="loginForm">
+      <label>Username</label>
+      <input id="username" autocomplete="username" required>
+      <label>Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <button class="primary full">LOGIN</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <aside class="sidebar">
+    <div class="brand"><img src="lundazi-town-council-logo.jpg"><div><b>LTC</b><small>ADMIN</small></div></div>
+    <nav>
+      <button data-page="dashboard" class="active">Dashboard</button>
+      <button data-page="groups">Groups</button>
+      <button data-page="members">Members</button>
+      <button data-page="applications">Applications</button>
+      <button data-page="empowerment">Empowerment</button>
+      <button data-page="reports">Reports</button>
+      <button id="usersNav" data-page="users" style="display:none">User Management</button>
+      <button id="auditNav" data-page="audit" style="display:none">Activity Log</button>
+    </nav>
+    <button id="logout" class="logout">Logout</button>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div><h2 id="pageTitle">Dashboard</h2><span id="role">Primary Administrator</span></div>
+      <div id="adminName"></div>
+    </header>
+
+    <section id="dashboard" class="page active">
+      <div class="cards">
+        <div class="card"><span>Total Groups</span><strong id="totalGroups">0</strong></div>
+        <div class="card"><span>Total Members</span><strong id="totalMembers">0</strong></div>
+        <div class="card"><span>Pending Applications</span><strong id="pending">0</strong></div>
+        <div class="card"><span>Empowerment Recorded</span><strong id="amount">K0</strong></div>
+      </div>
+      <div class="panel"><h3>Recent Registrations</h3><div id="recent"></div></div>
+    </section>
+
+    <section id="groups" class="page">
+      <div class="toolbar"><div><h3>Groups</h3><p>View and change existing registration records.</p></div><input id="groupSearch" placeholder="Search group, ward or contact"></div>
+      <div class="panel table-wrap"><table><thead><tr><th>Group ID</th><th>Group</th><th>Category</th><th>Area/Ward</th><th>Contact</th><th>Members</th><th>Actions</th></tr></thead><tbody id="groupRows"></tbody></table></div>
+    </section>
+
+    <section id="members" class="page">
+      <div class="toolbar"><div><h3>Members</h3><p>View and change member records.</p></div><input id="memberSearch" placeholder="Search identity, name, NRC or group"></div>
+      <div class="panel table-wrap"><table><thead><tr><th>Identity</th><th>Name</th><th>Group</th><th>Gender</th><th>Age</th><th>Phone</th><th>Position</th><th>Actions</th></tr></thead><tbody id="memberRows"></tbody></table></div>
+    </section>
+
+    <section id="applications" class="page">
+      <div class="panel"><h3>Applications</h3><p>Application status controls will use the existing group records. Status fields will be added without changing the public registration form.</p><div class="notice">Next database step: add application status and review metadata to the existing D1 schema.</div></div>
+    </section>
+
+    <section id="empowerment" class="page">
+      <div class="panel"><h3>Empowerment</h3><p>Manage empowerment type, amount, activity and notes already stored against groups.</p><div id="empowermentList"></div></div>
+    </section>
+
+    <section id="reports" class="page">
+      <div class="panel"><h3>Reports</h3><button id="exportGroups" class="secondary">Export Groups CSV</button> <button id="exportMembers" class="secondary">Export Members CSV</button></div>
+    </section>
+
+    <section id="users" class="page">
+      <div class="toolbar"><div><h3>Secondary Users</h3><p>Only the Primary Administrator can create or disable secondary accounts.</p></div><button id="newUser" class="primary">+ Create User</button></div>
+      <div class="panel table-wrap"><table><thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody id="userRows"></tbody></table></div>
+    </section>
+
+    <section id="audit" class="page">
+      <div class="panel"><h3>Activity Log</h3><div id="auditRows"></div></div>
+    </section>
+  </main>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modal-box"><button id="closeModal" class="close">×</button><div id="modalContent"></div></div></div>
+<script src="admin.js?v=5"></script>
+<script>
+(function(){
+  try {
+    var u=JSON.parse(sessionStorage.getItem("emp_admin_user")||"null");
+    var primary=u && u.role === "primary";
+    var un=document.getElementById("usersNav"), an=document.getElementById("auditNav"), nu=document.getElementById("newUser");
+    if(un) un.style.display=primary ? "" : "none";
+    if(an) an.style.display=primary ? "" : "none";
+    if(nu) nu.style.display=primary ? "" : "none";
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
