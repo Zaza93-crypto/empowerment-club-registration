@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Empowerment Groups Registry</title>
 <link rel="stylesheet" href="styles.css">
+<style>
+.admin-login-btn{margin-left:auto;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:9px;background:#0b5d3b;color:#fff;font-weight:700;font-size:.9rem}
+.admin-login-btn:hover{opacity:.9}
+.header-actions{display:flex;align-items:center;gap:10px}
+@media(max-width:650px){.admin-login-btn{padding:8px 11px;font-size:.8rem}}
+</style>
 </head>
 <body>
 <header>
@@ -12,7 +18,10 @@
     <div class="logo">EG</div>
     <div><h1>Empowerment Groups Registry</h1><p>Club & group registration system</p></div>
   </div>
-  <button class="menu-btn" onclick="toggleNav()">☰</button>
+  <div class="header-actions">
+    <a class="admin-login-btn" href="/login.html">Admin Login</a>
+    <button class="menu-btn" onclick="toggleNav()">☰</button>
+  </div>
 </header>
 
 <nav id="nav">
