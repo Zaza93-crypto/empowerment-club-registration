@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Empowerment Groups Registry</title>
 <link rel="stylesheet" href="styles.css">
+<script>
+(function () {
+  // Frontend authentication gate for the Empowerment Groups Registry.
+  // The login page should set one of these flags after successful login.
+  const authenticated =
+    localStorage.getItem("empowermentLoggedIn") === "true" ||
+    localStorage.getItem("isLoggedIn") === "true" ||
+    sessionStorage.getItem("empowermentLoggedIn") === "true";
+
+  if (!authenticated && !location.pathname.endsWith("/login.html") && !location.pathname.endsWith("login.html")) {
+    location.replace("login.html");
+  }
+})();
+</script>
+
 <style>
 .admin-login-btn{margin-left:auto;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:9px;background:#0b5d3b;color:#fff;font-weight:700;font-size:.9rem}
 .admin-login-btn:hover{opacity:.9}
@@ -19,7 +34,7 @@
     <div><h1>Empowerment Groups Registry</h1><p>Club & group registration system</p></div>
   </div>
   <div class="header-actions">
-    <a class="admin-login-btn" href="/login.html">Admin Login</a>
+    <a class="admin-login-btn" href="login.html">Admin Login</a>
     <button class="menu-btn" onclick="toggleNav()">☰</button>
   </div>
 </header>
