@@ -2,3 +2,126 @@
 .hint{font-size:12px;color:#6b7280}
 
 .toolbar-actions{display:flex;gap:10px;flex-wrap:wrap}.bulk-actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.bulk-help{background:#f5f7fb;border:1px solid #e1e6ef;padding:12px;border-radius:9px;line-height:1.7}.bulk-loading{padding:18px;text-align:center}.import-summary{padding:12px;background:#eef6ff;border-radius:9px;margin:15px 0}.import-warning{padding:12px;background:#fff8e1;border:1px solid #f2d37c;border-radius:9px;margin:12px 0}.import-warning ul{margin:8px 0}.import-error{padding:14px;background:#fff0f0;color:#a61b1b;border-radius:9px;margin-top:15px}.status-ok{color:#157347;font-weight:bold}.status-bad{color:#b42318;font-weight:bold}.preview-table{min-width:800px}.preview-table th,.preview-table td{padding:9px;font-size:12px}.primary:disabled{opacity:.45;cursor:not-allowed}@media(max-width:700px){.toolbar-actions{width:100%}.toolbar-actions button{flex:1}}
+
+
+/* ===== Zambia CDF-inspired visual theme ===== */
+:root{
+  --cdf-green:#006B3F;
+  --cdf-green-dark:#004B2A;
+  --cdf-red:#CE1126;
+  --cdf-yellow:#F9D616;
+  --cdf-black:#111111;
+  --cdf-white:#FFFFFF;
+  --cdf-bg:#F5F7F5;
+  --cdf-muted:#66736C;
+  --cdf-border:#DCE4DF;
+}
+body{
+  background:var(--cdf-bg);
+  color:var(--cdf-black);
+}
+header{
+  background:linear-gradient(120deg,var(--cdf-green-dark) 0%,var(--cdf-green) 58%,#07552f 100%);
+  color:var(--cdf-white);
+  border-bottom:5px solid var(--cdf-yellow);
+  position:relative;
+}
+header:after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-5px;
+  height:5px;
+  background:linear-gradient(90deg,var(--cdf-green) 0 25%,var(--cdf-red) 25% 50%,var(--cdf-black) 50% 75%,var(--cdf-yellow) 75% 100%);
+  opacity:.95;
+}
+.logo{
+  background:var(--cdf-yellow);
+  color:var(--cdf-black);
+  border:2px solid var(--cdf-white);
+  box-shadow:0 2px 8px #0004;
+}
+.brand h1{color:var(--cdf-white)}
+.brand p{color:#eaf5ef}
+nav{
+  background:var(--cdf-white);
+  border-bottom:1px solid var(--cdf-border);
+}
+nav button{color:#46524C}
+nav button:hover{color:var(--cdf-green)}
+nav button.active{
+  color:var(--cdf-green-dark);
+  border-bottom:3px solid var(--cdf-red);
+  font-weight:800;
+}
+.page-title h2{color:var(--cdf-green-dark)}
+.page-title p{color:var(--cdf-muted)}
+.card,.panel{
+  background:var(--cdf-white);
+  border-top:4px solid var(--cdf-green);
+  box-shadow:0 3px 14px #00351d12;
+}
+.card:nth-child(2){border-top-color:var(--cdf-yellow)}
+.card:nth-child(3){border-top-color:var(--cdf-red)}
+.card:nth-child(4){border-top-color:var(--cdf-black)}
+.card span{color:var(--cdf-muted)}
+.card strong{color:var(--cdf-green-dark)}
+.primary{
+  background:var(--cdf-green);
+  color:var(--cdf-white);
+}
+.primary:hover{background:var(--cdf-green-dark)}
+.secondary{
+  background:#EEF3F0;
+  color:var(--cdf-green-dark);
+  border:1px solid #C9D8D0;
+}
+.secondary:hover{background:#E3ECE7}
+.search{
+  border:1px solid #C8D5CE;
+  background:var(--cdf-white);
+}
+.search:focus{
+  outline:2px solid #F9D61688;
+  border-color:var(--cdf-green);
+}
+th{color:var(--cdf-green-dark)}
+th,td{border-bottom:1px solid #E6ECE8}
+.action{background:#EEF3F0}
+.danger{color:var(--cdf-red)}
+.modal-box{border-top:5px solid var(--cdf-green)}
+.login-logo{
+  background:var(--cdf-yellow) !important;
+  color:var(--cdf-black) !important;
+  border:3px solid var(--cdf-green);
+}
+.login-box{
+  border-top:6px solid var(--cdf-green);
+  box-shadow:0 8px 30px #00351d25;
+}
+.login-btn{
+  background:var(--cdf-green) !important;
+  color:var(--cdf-white) !important;
+}
+.login-btn:hover{background:var(--cdf-green-dark) !important}
+.logout-btn{
+  background:var(--cdf-red) !important;
+  color:var(--cdf-white) !important;
+}
+.admin-login-btn{
+  background:var(--cdf-red) !important;
+  color:var(--cdf-white) !important;
+  border:1px solid #ffffff55;
+}
+.admin-login-btn:hover{background:#A90E20 !important}
+input,select,textarea{
+  border-color:#C8D5CE !important;
+}
+button:focus,a:focus,input:focus,select:focus,textarea:focus{
+  outline:2px solid var(--cdf-yellow);
+  outline-offset:2px;
+}
+/* Small CDF-style accent bars */
+.panel h3{color:var(--cdf-green-dark)}
+
