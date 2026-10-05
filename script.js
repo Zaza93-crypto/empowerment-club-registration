@@ -31,8 +31,10 @@ function logout(){
   }
 }
 function checkLogin(){
+  const loginScreen=document.getElementById('loginScreen');
+  if(!loginScreen) return;
   const loggedIn=localStorage.getItem(AUTH_KEY)==='true';
-  document.getElementById('loginScreen').classList.toggle('hidden',loggedIn);
+  loginScreen.classList.toggle('hidden',loggedIn);
 }
 
 const KEY='empowermentRegistryV1';
