@@ -1,105 +1,4 @@
-
-/* ===== Empowerment Registry authentication ===== */
-const AUTH_KEY='empowermentRegistryLoggedIn';
-const TOKEN_KEY='empowermentAdminToken';
-const API_ROOT='https://empowerment-api.mikotembo129.workers.dev';
-
-async function login(e){
-  if(e && e.preventDefault) e.preventDefault();
-
-  const usernameEl=document.getElementById('loginUsername');
-  const passwordEl=document.getElementById('loginPassword');
-  const err=document.getElementById('loginError');
-
-  const username=(usernameEl?.value||'').trim();
-  const password=passwordEl?.value||'';
-
-  if(!username || !password){
-    if(err){err.textContent='Username and password are required.';err.classList.add('show');}
-    return false;
-  }
-
-  try{
-    const response=await fetch(API_ROOT,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'adminLogin',username,password})
-    });
-
-    const result=await response.json().catch(()=>({}));
-
-    if(!response.ok || !result.token){
-      throw new Error(result.error||'Invalid username or password.');
-    }
-
-    sessionStorage.setItem(TOKEN_KEY,result.token);
-    localStorage.setItem(TOKEN_KEY,result.token);
-    localStorage.setItem(AUTH_KEY,'true');
-    localStorage.setItem('empowermentLoggedIn','true');
-
-    if(err) err.classList.remove('show');
-
-    const loginScreen=document.getElementById('loginScreen');
-    if(loginScreen){
-      loginScreen.classList.add('hidden');
-    }else{
-      // Works with the standalone login.html architecture.
-      const target=new URL('index.html',window.location.href);
-      window.location.href=target.href;
-      return false;
-    }
-
-    if(typeof toast==='function') toast('Login successful');
-    return false;
-  }catch(error){
-    console.error('Login error:',error);
-    if(err){
-      err.textContent=error.message||'Login failed.';
-      err.classList.add('show');
-    }
-    if(passwordEl){
-      passwordEl.value='';
-      passwordEl.focus();
-    }
-    return false;
-  }
-}
-
-function logout(){
-  if(!confirm('Log out of the registry?')) return;
-
-  sessionStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(AUTH_KEY);
-  localStorage.removeItem('empowermentLoggedIn');
-  localStorage.removeItem('isLoggedIn');
-
-  const loginScreen=document.getElementById('loginScreen');
-  if(loginScreen){
-    loginScreen.classList.remove('hidden');
-    const u=document.getElementById('loginUsername');
-    const pw=document.getElementById('loginPassword');
-    if(u){u.value='';u.focus();}
-    if(pw)pw.value='';
-  }else{
-    window.location.href=new URL('login.html',window.location.href).href;
-  }
-}
-
-function checkLogin(){
-  const token=sessionStorage.getItem(TOKEN_KEY) ||
-              localStorage.getItem(TOKEN_KEY);
-  const loggedIn=!!token && localStorage.getItem(AUTH_KEY)==='true';
-
-  const loginScreen=document.getElementById('loginScreen');
-  if(loginScreen){
-    loginScreen.classList.toggle('hidden',loggedIn);
-  }
-  return loggedIn;
-}
-/* ===== End authentication ===== */
-
-const API='https://empowerment-api.mikotembo129.workers.dev';
+const API='https://empowerment-api.mikotembo129.workers.dev/api/data';
 let data={groups:[],members:[]};
 let bulkPendingRows=[];
 
@@ -111,55 +10,19 @@ const api=async(body=null)=>{
   if(!r.ok) throw new Error(j.error||`Request failed (${r.status})`);
   return j;
 };
-async function loadData(showError=true){
+async function loadData(){
   try{
     const j=await api();
     data={groups:j.groups||[],members:j.members||[]};
     updateDashboard();renderGroups();renderMembers();renderReports();
   }catch(err){
     console.error(err);
-    if(showError) toast('Database connection failed: '+err.message);
+    toast('Database connection failed: '+err.message);
   }
 }
-
-/* Keep all browsers/devices synchronized with the central database. */
-let syncBusy=false;
-async function syncData(){
-  if(syncBusy || document.hidden) return;
-  syncBusy=true;
-  try{ await loadData(false); }
-  finally{ syncBusy=false; }
-}
-
-setInterval(syncData,10000);
-document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden) syncData();
-});
-window.addEventListener('focus',()=>syncData());
 async function saveRemote(action,payload){
   try{
-    const token=sessionStorage.getItem(TOKEN_KEY) ||
-                localStorage.getItem(TOKEN_KEY);
-    if(!token) throw new Error('Your login session has expired. Please log in again.');
-
-    const protectedAction={
-      saveGroup:'adminSaveGroup',
-      saveMember:'adminSaveMember',
-      deleteGroup:'adminDeleteGroup',
-      deleteMember:'adminDeleteMember'
-    }[action] || action;
-
-    const r=await fetch(API,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer '+token
-      },
-      body:JSON.stringify({action:protectedAction,...payload})
-    });
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok) throw new Error(j.error||`Request failed (${r.status})`);
-
+    await api({action,...payload});
     await loadData();
     return true;
   }catch(err){
@@ -186,12 +49,14 @@ function toast(msg){let t=document.getElementById('toast');t.textContent=msg;t.s
 function openGroupForm(id=null){
   let g=data.groups.find(x=>x.id===id)||{};
   openModal(`<h2>${id?'Edit':'Register'} Group</h2><form onsubmit="saveGroup(event,'${id||''}')"><div class="form-grid">
+  <div class="field"><label>Group Specific Identity Number *</label><input id="gidnumber" required value="${esc(g.groupNumber)}" placeholder="e.g. GRP-001"><small class="hint">Assign a unique identity number specifically to this group. Example: GRP-001.</small></div>
+  <div class="field"><label>Club Registration Number</label><input id="gclubreg" value="${esc(g.clubRegistrationNumber||g.clubRegNumber)}" placeholder="e.g. CBO/CLUB/001"></div>
   <div class="field"><label>Group Name *</label><input id="gname" required value="${esc(g.name)}"></div>
   <div class="field"><label>Group Category *</label><select id="gcat" required><option value="">Select</option>${['Women','Youth','Men','Mixed','Cooperative','Other'].map(x=>`<option ${g.category===x?'selected':''}>${x}</option>`).join('')}</select></div>
   <div class="field"><label>Area/Ward *</label><input id="garea" required value="${esc(g.area)}"></div>
   <div class="field"><label>Registration Date</label><input id="gdate" type="date" value="${g.date||new Date().toISOString().slice(0,10)}"></div>
-  <div class="field"><label>Contact Person *</label><input id="gcontact" required value="${esc(g.contact)}"></div>
-  <div class="field"><label>Phone Number *</label><input id="gphone" required value="${esc(g.phone)}"></div>
+  <div class="field"><label>Contact Person</label><input id="gcontact" value="${esc(g.contact)}"></div>
+  <div class="field"><label>Phone Number</label><input id="gphone" value="${esc(g.phone)}"></div>
   <div class="field"><label>Empowerment Type</label><input id="getype" value="${esc(g.empowermentType)}" placeholder="Grant, loan, equipment..."></div>
   <div class="field"><label>Amount Received (K)</label><input id="gamount" type="number" min="0" step="0.01" value="${g.amount||''}"></div>
   <div class="field full"><label>Main Activity/Business</label><input id="gactivity" value="${esc(g.activity)}" placeholder="e.g. Poultry, tailoring, farming"></div>
@@ -200,7 +65,7 @@ function openGroupForm(id=null){
 }
 async function saveGroup(e,id){
   e.preventDefault();
-  let obj={id:id||crypto.randomUUID(),name:gname.value.trim(),category:gcat.value,area:garea.value.trim(),date:gdate.value,contact:gcontact.value.trim(),phone:gphone.value.trim(),empowermentType:getype.value.trim(),amount:Number(gamount.value||0),activity:gactivity.value.trim(),note:gnote.value.trim()};
+  let obj={id:id||crypto.randomUUID(),groupNumber:gidnumber.value.trim(),clubRegistrationNumber:gclubreg.value.trim(),name:gname.value.trim(),category:gcat.value,area:garea.value.trim(),date:gdate.value,contact:gcontact.value.trim(),phone:gphone.value.trim(),empowermentType:getype.value.trim(),amount:Number(gamount.value||0),activity:gactivity.value.trim(),note:gnote.value.trim()};
   if(await saveRemote('saveGroup',{group:obj})){closeModal();toast('Group saved successfully')}
 }
 
@@ -230,8 +95,8 @@ async function saveMember(e,id){
 
 function renderGroups(){
   let q=(document.getElementById('groupSearch')?.value||'').toLowerCase();
-  let rows=data.groups.filter(g=>[g.name,g.area,g.contact,g.category].join(' ').toLowerCase().includes(q));
-  document.getElementById('groupTable').innerHTML=rows.length?rows.map(g=>`<tr><td><b>${esc(g.name)}</b></td><td>${esc(g.category)}</td><td>${esc(g.area)}</td><td>${esc(g.contact)}<br>${esc(g.phone)}</td><td>${data.members.filter(m=>m.groupId===g.id).length}</td><td><button class="action" onclick="openGroupForm('${g.id}')">Edit</button><button class="action danger" onclick="deleteGroup('${g.id}')">Delete</button></td></tr>`).join(''):`<tr><td colspan="6" class="empty">No groups registered.</td></tr>`
+  let rows=data.groups.filter(g=>[g.groupNumber,g.clubRegistrationNumber,g.clubRegNumber,g.name,g.area,g.contact,g.category].join(' ').toLowerCase().includes(q));
+  document.getElementById('groupTable').innerHTML=rows.length?rows.map(g=>`<tr><td><b>${esc(g.groupNumber||'—')}</b><br>${esc(g.name)}${g.clubRegistrationNumber||g.clubRegNumber?`<br><small>Club Reg: ${esc(g.clubRegistrationNumber||g.clubRegNumber)}</small>`:''}</td><td>${esc(g.category)}</td><td>${esc(g.area)}</td><td>${esc(g.contact)}<br>${esc(g.phone)}</td><td>${data.members.filter(m=>m.groupId===g.id).length}</td><td><button class="action" onclick="openGroupForm('${g.id}')">Edit</button><button class="action danger" onclick="deleteGroup('${g.id}')">Delete</button></td></tr>`).join(''):`<tr><td colspan="6" class="empty">No groups registered.</td></tr>`
 }
 function renderMembers(){
   let q=(document.getElementById('memberSearch')?.value||'').toLowerCase();
@@ -332,63 +197,16 @@ function previewBulkImport(event){
 }
 async function commitBulkImport(rows){
   if(!Array.isArray(rows)||!rows.length)return;
-
-  const token=sessionStorage.getItem(TOKEN_KEY) ||
-              localStorage.getItem(TOKEN_KEY);
-  if(!token){toast('Please log in again before importing members.');return}
-
-  const btn=document.querySelector('#bulkPreview .primary');
-  if(btn){btn.disabled=true;btn.textContent='Importing...';}
-
-  let added=0, skipped=0;
-
   try{
-    for(const r of rows){
-      try{
-        const member={
-          id:crypto.randomUUID(),
-          identityNumber:r.identityNumber,
-          groupId:r.groupId,
-          name:r.name,
-          nrc:r.nrc,
-          gender:r.gender,
-          age:r.age,
-          phone:r.phone,
-          position:r.position
-        };
-
-        const response=await fetch(API,{
-          method:'POST',
-          headers:{
-            'Content-Type':'application/json',
-            'Authorization':'Bearer '+token
-          },
-          body:JSON.stringify({action:'adminSaveMember',member})
-        });
-
-        const result=await response.json().catch(()=>({}));
-        if(!response.ok) throw new Error(result.error||'Member import failed');
-        added++;
-      }catch(rowError){
-        console.error('Bulk member error:',rowError);
-        skipped++;
-      }
-    }
-
-    await loadData();
-    closeModal();
-    toast(`${added} member${added===1?'':'s'} imported${skipped?`; ${skipped} skipped`:''}`);
-  }catch(err){
-    console.error(err);
-    toast(err.message||'Bulk import failed');
-    if(btn){btn.disabled=false;btn.textContent=`Import ${rows.length} Valid Members`;}
-  }
+    const result=await api({action:'bulkMembers',members:rows.map(r=>({id:crypto.randomUUID(),identityNumber:r.identityNumber,groupId:r.groupId,name:r.name,nrc:r.nrc,gender:r.gender,age:r.age,phone:r.phone,position:r.position}))});
+    await loadData();closeModal();toast(`${result.added||0} member${result.added===1?'':'s'} imported${result.skipped?`; ${result.skipped} skipped`:''}`)
+  }catch(err){console.error(err);toast(err.message||'Bulk import failed')}
 }
 
 function csvEscape(v){return '"'+String(v??'').replaceAll('"','""')+'"'}
 function download(content,name,type='text/csv'){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function exportCSV(type){
-  let rows=type==='groups'?data.groups.map(g=>({Group:g.name,Category:g.category,Area:g.area,Date:g.date,Contact:g.contact,Phone:g.phone,EmpowermentType:g.empowermentType,Amount:g.amount,Activity:g.activity})) : data.members.map(m=>({IdentityNumber:m.identityNumber||'',Name:m.name,NRC:m.nrc,Group:data.groups.find(g=>g.id===m.groupId)?.name||'',Gender:m.gender,Age:m.age,Phone:m.phone,Position:m.position}));
+  let rows=type==='groups'?data.groups.map(g=>({GroupID:g.groupNumber||'',ClubRegistrationNumber:g.clubRegistrationNumber||g.clubRegNumber||'',Group:g.name,Category:g.category,Area:g.area,Date:g.date,Contact:g.contact,Phone:g.phone,EmpowermentType:g.empowermentType,Amount:g.amount,Activity:g.activity})) : data.members.map(m=>({IdentityNumber:m.identityNumber||'',Name:m.name,NRC:m.nrc,Group:data.groups.find(g=>g.id===m.groupId)?.name||'',Gender:m.gender,Age:m.age,Phone:m.phone,Position:m.position}));
   let keys=Object.keys(rows[0]||{Data:''});let csv=[keys.join(','),...rows.map(r=>keys.map(k=>csvEscape(r[k])).join(','))].join('\n');download(csv,`${type}-registry.csv`);toast('CSV exported')
 }
 async function backupData(){download(JSON.stringify(data,null,2),'empowerment-registry-backup.json','application/json');toast('Backup created')}
