@@ -1,5 +1,7 @@
 const API='https://empowerment-api.mikotembo129.workers.dev/api/data';
 let data={groups:[],members:[]};
+let adminToken=sessionStorage.getItem('emp_admin_token')||'';
+let currentUser=null;
 let bulkPendingRows=[];
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -10,6 +12,48 @@ const api=async(body=null)=>{
   if(!r.ok) throw new Error(j.error||`Request failed (${r.status})`);
   return j;
 };
+
+function showRegistryLogin(message=''){
+  const gate=document.getElementById('authGate');
+  const error=document.getElementById('authError');
+  if(gate)gate.classList.remove('hidden');
+  if(error)error.textContent=message;
+}
+function hideRegistryLogin(){
+  const gate=document.getElementById('authGate');
+  if(gate)gate.classList.add('hidden');
+}
+async function registryLogin(e){
+  e.preventDefault();
+  const error=document.getElementById('authError');
+  error.textContent='';
+  try{
+    const body={action:'adminLogin',username:document.getElementById('registryUsername').value.trim(),password:document.getElementById('registryPassword').value};
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.error||'Login failed');
+    adminToken=j.token||'';
+    currentUser=j.user||null;
+    sessionStorage.setItem('emp_admin_token',adminToken);
+    sessionStorage.setItem('emp_admin_user',JSON.stringify(currentUser||{}));
+    hideRegistryLogin();
+    await document.getElementById('registryLoginForm')?.addEventListener('submit',registryLogin);
+try{currentUser=JSON.parse(sessionStorage.getItem('emp_admin_user')||'null')}catch{}
+if(adminToken){hideRegistryLogin();loadData()}else{showRegistryLogin('')}
+
+    toast(`Signed in as ${currentUser?.name||currentUser?.username||'Administrator'}`);
+  }catch(err){
+    error.textContent=err.message||'Login failed';
+  }
+}
+function logoutRegistry(){
+  sessionStorage.removeItem('emp_admin_token');
+  sessionStorage.removeItem('emp_admin_user');
+  adminToken='';
+  currentUser=null;
+  showRegistryLogin('You have been signed out.');
+}
+
 async function loadData(){
   try{
     const j=await api();
@@ -22,7 +66,12 @@ async function loadData(){
 }
 async function saveRemote(action,payload){
   try{
-    await api({action,...payload});
+    if(!adminToken){showRegistryLogin('Please sign in before entering or changing data.');return false}
+    const opts={method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${adminToken}`},body:JSON.stringify({action,...payload})};
+    const r=await fetch(API,opts);
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.error||`Request failed (${r.status})`);
+
     await loadData();
     return true;
   }catch(err){
