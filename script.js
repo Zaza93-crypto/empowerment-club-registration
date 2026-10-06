@@ -37,10 +37,7 @@ async function registryLogin(e){
     sessionStorage.setItem('emp_admin_token',adminToken);
     sessionStorage.setItem('emp_admin_user',JSON.stringify(currentUser||{}));
     hideRegistryLogin();
-    await document.getElementById('registryLoginForm')?.addEventListener('submit',registryLogin);
-try{currentUser=JSON.parse(sessionStorage.getItem('emp_admin_user')||'null')}catch{}
-if(adminToken){hideRegistryLogin();loadData()}else{showRegistryLogin('')}
-
+    await loadData();
     toast(`Signed in as ${currentUser?.name||currentUser?.username||'Administrator'}`);
   }catch(err){
     error.textContent=err.message||'Login failed';
@@ -53,6 +50,10 @@ function logoutRegistry(){
   currentUser=null;
   showRegistryLogin('You have been signed out.');
 }
+
+document.getElementById('registryLoginForm')?.addEventListener('submit',registryLogin);
+try{currentUser=JSON.parse(sessionStorage.getItem('emp_admin_user')||'null')}catch{}
+if(adminToken){hideRegistryLogin();loadData()}else{showRegistryLogin('')}
 
 async function loadData(){
   try{
