@@ -245,7 +245,6 @@ function previewBulkImport(event){
   };
   reader.readAsArrayBuffer(file)
 }
-async function commitBulkImport(rows){
  async function commitBulkImport(rows) {
   if (!Array.isArray(rows) || !rows.length) return;
 
