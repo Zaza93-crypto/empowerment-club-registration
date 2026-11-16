@@ -246,11 +246,59 @@ function previewBulkImport(event){
   reader.readAsArrayBuffer(file)
 }
 async function commitBulkImport(rows){
-  if(!Array.isArray(rows)||!rows.length)return;
-  try{
-    const result=await api({action:'bulkMembers',members:rows.map(r=>({id:crypto.randomUUID(),identityNumber:r.identityNumber,groupId:r.groupId,name:r.name,nrc:r.nrc,gender:r.gender,age:r.age,phone:r.phone,position:r.position}))});
-    await loadData();closeModal();toast(`${result.added||0} member${result.added===1?'':'s'} imported${result.skipped?`; ${result.skipped} skipped`:''}`)
-  }catch(err){console.error(err);toast(err.message||'Bulk import failed')}
+ async function commitBulkImport(rows) {
+  if (!Array.isArray(rows) || !rows.length) return;
+
+  if (!adminToken) {
+    showRegistryLogin('Please sign in before uploading members.');
+    return;
+  }
+
+  try {
+    const response = await fetch(API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminToken}`
+      },
+      body: JSON.stringify({
+        action: 'bulkMembers',
+        members: rows.map(r => ({
+          id: crypto.randomUUID(),
+          identityNumber: r.identityNumber,
+          groupId: r.groupId,
+          name: r.name,
+          nrc: r.nrc,
+          gender: r.gender,
+          age: r.age,
+          phone: r.phone,
+          position: r.position
+        }))
+      })
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        logoutRegistry();
+        throw new Error('Your administrator session has expired. Please sign in again.');
+      }
+      throw new Error(result.error || `Upload failed (${response.status})`);
+    }
+
+    await loadData();
+    closeModal();
+
+    toast(
+      `${result.added || 0} members imported` +
+      (result.skipped ? `; ${result.skipped} skipped` : '')
+    );
+
+  } catch (err) {
+    console.error(err);
+    toast(err.message || 'Bulk import failed');
+  }
 }
 
 function csvEscape(v){return '"'+String(v??'').replaceAll('"','""')+'"'}
